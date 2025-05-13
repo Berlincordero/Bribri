@@ -14,7 +14,7 @@ export default function NotificacionesScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardText}>
-            Aquí aparecerán tus notificaciones recientes.
+            Aquí aparecerán  notificaciones recientes.
           </Text>
         </View>
       </ScrollView>

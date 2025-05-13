@@ -14,7 +14,7 @@ export default function BuscarScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardText}>
-            Implementa aquí tu buscador y muestra los resultados.
+            pantalla de busquedas globales.
           </Text>
         </View>
       </ScrollView>

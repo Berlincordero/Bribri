@@ -25,9 +25,9 @@ export default function TermsScreen() {
           <Text style={styles.text}>
             1. Uso del servicio{"\n\n"}
             El uso de Bribri Social está sujeto a las siguientes condiciones.
-            Todo usuario debe ser mayor de 18 años. Esta plataforma es
+            Todo usuario debe ser mayor de 18 años queda claro esta condicion si se viola la politica de la misma y un menor de edad se registra y la usa se debe abstener de cualquier responsabilidad de la plataforma ya que esto se tomara como violacion de politicas y condiciones excepto que al mismo se le otorgue el permiso por parte del tutor legal de su uso y contenido. Esta plataforma es
             exclusivamente agropecuaria, el contenido de la misma es regulado y
-            no se aceptará otro tipo de contenido. Nuestra misión es conectar a
+            no se aceptará otro tipo de contenido y al usuario se le sancionara con advertencias y finalmente con la desactivacion de la cuenta. Nuestra misión es conectar a
             la agropecuaria con todas las personas que aman la agricultura y la
             naturaleza, por ello, el usuario está obligado a usarla para dichos
             fines. Si el usuario no lo hace, será eliminado de la plataforma y

@@ -21,7 +21,7 @@ export default function ConfigScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardText}>
-            Aquí podrás cambiar la configuración de tu cuenta y la app.
+             cambiar la configuración de  cuenta y la app.
           </Text>
         </View>
 

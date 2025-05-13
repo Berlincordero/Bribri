@@ -85,8 +85,8 @@ export default function LoginScreen() {
 
         {/* FOOTER */}
         <Text style={styles.footer}>
-          Un producto de <Text style={styles.footerBold}>Umbrella Agro</Text>, la
-          sombrilla de la agropecuaria
+          Un producto de <Text style={styles.footerBold}>Umbrella Agro COSTA RICA</Text>, la
+          sombrilla de la agropecuaria orgullosamente costarricenses.
         </Text>
       </View>
     </ImageBackground>

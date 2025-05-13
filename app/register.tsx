@@ -7,56 +7,75 @@ import {
   StyleSheet,
   TouchableOpacity,
   ImageBackground,
+  Platform,
+  ScrollView,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { endpoints } from "./api";
 
 const bgImage = require("../assets/images/fondo.png");
 
+type Gender = "F" | "M" | "O";
+
 export default function RegisterScreen() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const [dob, setDob] = useState<Date | undefined>();
+  const [showPicker, setShowPicker] = useState(false);
+
+  const [gender, setGender] = useState<Gender>("M");
+
   const router = useRouter();
 
-  /* ---------- REGISTRO ---------- */
   const handleRegister = async () => {
     try {
-      const response = await fetch(endpoints.register(), {
+      const payload: any = { username, email, password, gender };
+      if (dob) payload.date_of_birth = dob.toISOString().split("T")[0];
+
+      const res = await fetch(endpoints.register(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify(payload),
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (res.ok) {
+        const data = await res.json();
         await AsyncStorage.setItem("userToken", data.token);
         Alert.alert("Registro exitoso", `Bienvenido, ${data.username}`);
         router.replace("/home");
       } else {
-        const errorData = await response.json();
-        Alert.alert("Error al registrar", JSON.stringify(errorData));
+        const err = await res.json();
+        Alert.alert("Error al registrar", JSON.stringify(err));
       }
-    } catch (error) {
-      console.error(error);
+    } catch {
       Alert.alert("Error", "No se pudo conectar con el servidor");
     }
   };
 
+  /* ---------- UI ---------- */
   return (
     <ImageBackground source={bgImage} style={styles.bg} resizeMode="cover">
       <View style={styles.overlay}>
         {/* ENCABEZADO */}
         <View style={styles.header}>
-          <Text style={styles.brand}>Bribri Social</Text>
+          <Text style={styles.brand}>Bribri Social</Text>
           <Text style={styles.tagline}>La red social exclusiva del agro</Text>
         </View>
 
-        {/* FORMULARIO */}
-        <View style={styles.card}>
+        {/* FORMULARIO DESPLAZABLE */}
+        <ScrollView
+          style={styles.card}
+          contentContainerStyle={{ paddingBottom: 20 }}
+          showsVerticalScrollIndicator={false}
+        >
           <Text style={styles.formTitle}>Registro</Text>
 
+          {/* CAMPOS */}
           <TextInput
             style={styles.input}
             placeholder="Usuario"
@@ -68,6 +87,7 @@ export default function RegisterScreen() {
             style={styles.input}
             placeholder="Correo"
             placeholderTextColor="#E8F5E9"
+            keyboardType="email-address"
             value={email}
             onChangeText={setEmail}
           />
@@ -80,10 +100,60 @@ export default function RegisterScreen() {
             onChangeText={setPassword}
           />
 
-          {/* AVISO LEGAL */}
+          {/* FECHA */}
+          <TouchableOpacity
+            style={styles.input}
+            onPress={() => setShowPicker(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={{ color: "#E8F5E9" }}>
+              {dob
+                ? dob.toLocaleDateString()
+                : "Fecha de nacimiento (tocar para elegir)"}
+            </Text>
+          </TouchableOpacity>
+          {showPicker && (
+            <DateTimePicker
+              value={dob || new Date(2000, 0, 1)}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={(_e: any, d?: Date) => {
+                setShowPicker(false);
+                if (d) setDob(d);
+              }}
+              maximumDate={new Date()}
+            />
+          )}
+
+          {/* GÉNERO — radios */}
+          <Text style={styles.genderLabel}>Género</Text>
+          <View style={styles.genderRow}>
+            {[
+              { lbl: "Mujer", val: "F" },
+              { lbl: "Hombre", val: "M" },
+              { lbl: "Personalizado", val: "O" },
+            ].map(({ lbl, val }) => (
+              <TouchableOpacity
+                key={val}
+                style={styles.radioOpt}
+                onPress={() => setGender(val as Gender)}
+              >
+                <Ionicons
+                  name={
+                    gender === val ? "radio-button-on" : "radio-button-off"
+                  }
+                  size={20}
+                  color="#C5E1A5"
+                />
+                <Text style={styles.radioTxt}>{lbl}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* AVISO */}
           <Text style={styles.legalText}>
             Al hacer clic en{" "}
-            <Text style={{ fontWeight: "bold" }}>"Crear cuenta"</Text>, aceptas
+            <Text style={{ fontWeight: "bold" }}>"Crear cuenta"</Text>, aceptas
             nuestras{" "}
             <Text style={styles.link} onPress={() => router.push("/terms")}>
               Condiciones
@@ -96,27 +166,27 @@ export default function RegisterScreen() {
             <Text style={styles.link} onPress={() => router.push("/cookies")}>
               Política de cookies
             </Text>
-            . Es posible que te enviemos notificaciones por SMS, que puedes
-            desactivar cuando quieras.
+            .
           </Text>
 
+          {/* BOTÓN */}
           <TouchableOpacity style={styles.btn} onPress={handleRegister}>
-            <Text style={styles.btnText}>CREAR CUENTA</Text>
+            <Text style={styles.btnText}>CREAR CUENTA</Text>
           </TouchableOpacity>
 
-          {/* NUEVO ENLACE PARA VOLVER AL LOGIN */}
+          {/* VOLVER A LOGIN */}
           <TouchableOpacity
             style={styles.backLogin}
             onPress={() => router.replace("/")}
           >
-            <Text style={styles.backLoginText}>¿Ya tienes? Ingresa</Text>
+            <Text style={styles.backLoginText}>¿Ya tienes? Ingresa</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
 
         {/* PIE */}
         <Text style={styles.footer}>
-          Un producto de <Text style={styles.footerBold}>Umbrella Agro</Text>, la
-          sombrilla de la agropecuaria
+                 Un producto de <Text style={styles.footerBold}>Umbrella Agro COSTA RICA</Text>, la
+                 sombrilla de la agropecuaria orgullosamente costarricenses.
         </Text>
       </View>
     </ImageBackground>
@@ -130,48 +200,63 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.55)",
     justifyContent: "space-between",
-    paddingHorizontal: 24,
-    paddingVertical: 32,
+    paddingHorizontal: 20,
+    paddingVertical: 26,
   },
   header: { alignItems: "center" },
   brand: {
-    fontSize: 34,
+    fontSize: 30,
     fontWeight: "900",
     color: "#FFFFFF",
-    textShadowColor: "rgba(0,0,0,0.6)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 3,
   },
-  tagline: { fontSize: 16, color: "#C8E6C9", fontWeight: "600" },
+  tagline: { fontSize: 14, color: "#C8E6C9", fontWeight: "600" },
+
+  /* CARD */
   card: {
     backgroundColor: "rgba(255,255,255,0.10)",
     borderRadius: 16,
-    padding: 26,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    maxHeight: 480,
   },
   formTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "800",
     color: "#fff",
     alignSelf: "center",
-    marginBottom: 18,
+    marginBottom: 12,
   },
   input: {
     borderWidth: 2,
     borderColor: "#AED581",
-    padding: 12,
-    marginVertical: 6,
+    padding: 10,
+    marginVertical: 5,
     borderRadius: 10,
     backgroundColor: "transparent",
-    fontSize: 16,
+    fontSize: 15,
     color: "#FFFFFF",
-    fontWeight: "700",
   },
-  legalText: {
-    fontSize: 12,
-    color: "#E0F2F1",
-    marginTop: 12,
+
+  /* GÉNERO */
+  genderLabel: {
+    color: "#E8F5E9",
+    marginTop: 6,
+    marginBottom: 2,
+    fontSize: 14,
+  },
+  genderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 8,
-    lineHeight: 16,
+  },
+  radioOpt: { flexDirection: "row", alignItems: "center" },
+  radioTxt: { color: "#E8F5E9", marginLeft: 4, fontSize: 14 },
+
+  legalText: {
+    fontSize: 11,
+    color: "#E0F2F1",
+    marginTop: 6,
+    lineHeight: 15,
   },
   link: {
     textDecorationLine: "underline",
@@ -180,29 +265,20 @@ const styles = StyleSheet.create({
   },
   btn: {
     backgroundColor: "#2E7D32",
-    paddingVertical: 12,
-    borderRadius: 32,
+    paddingVertical: 10,
+    borderRadius: 28,
     alignItems: "center",
     alignSelf: "center",
     width: "60%",
     marginTop: 6,
-    elevation: 4,
   },
-  btnText: {
-    color: "#FFFFFF",
-    fontWeight: "900",
-    letterSpacing: 1,
-    fontSize: 16,
-  },
-
-  /* ENLACE VOLVER A LOGIN */
-  backLogin: { marginTop: 10, alignItems: "center" },
+  btnText: { color: "#FFFFFF", fontWeight: "900", fontSize: 15 },
+  backLogin: { marginTop: 8, alignItems: "center" },
   backLoginText: {
     color: "#C5E1A5",
     fontWeight: "700",
     textDecorationLine: "underline",
   },
-
-  footer: { textAlign: "center", color: "#AED581", fontSize: 13 },
+  footer: { textAlign: "center", color: "#AED581", fontSize: 12 },
   footerBold: { fontWeight: "900", color: "#C5E1A5" },
 });

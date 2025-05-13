@@ -54,7 +54,7 @@ export default function MenuScreen() {
   return (
     <ImageBackground source={bgImage} style={styles.bg} resizeMode="cover">
       <View style={styles.overlay}>
-        <Text style={styles.title}>Menú rápido</Text>
+        <Text style={styles.title}>Menú </Text>
 
         {/* ---------- CARD ---------- */}
         <View style={styles.card}>
