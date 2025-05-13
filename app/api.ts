@@ -23,4 +23,5 @@ export const endpoints = {
   fincaPosts    : () => api("/api/finca/posts/"),      // listar / crear posts
   fincaPostDetail: (id: number | string) =>            // obtener / editar / eliminar
                    api(`/api/finca/posts/${id}/`),
+                   
 };

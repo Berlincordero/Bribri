@@ -45,6 +45,38 @@ interface PostDTO {
   content?: string | null;
 }
 
+/* ═════════════ MODAL OPCIONES PUBLICACIÓN ════════════ */
+function PostOptionsModal({
+  visible, onClose, onEdit, onTrash,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onEdit:  () => void;
+  onTrash: () => void;
+}) {
+  return (
+    <Modal transparent visible={visible} animationType="fade">
+      <View style={pStyles.backdrop}>
+        <View style={pStyles.sheet}>
+          <TouchableOpacity style={pStyles.optBtn} onPress={onEdit}>
+            <Ionicons name="create-outline" size={20} color="#C5E1A5" style={{ marginRight: 6 }} />
+            <Text style={pStyles.optTxt}>Editar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={pStyles.optBtn} onPress={onTrash}>
+            <Ionicons name="trash-outline" size={20} color="#E53935" style={{ marginRight: 6 }} />
+            <Text style={[pStyles.optTxt, { color: "#E53935" }]}>Mover a papelera</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={onClose} style={pStyles.cancelWrap}>
+            <Text style={pStyles.cancelTxt}>Cancelar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 /* ═════════════ MODAL PUBLICAR ════════════ */
 function CreatePostModal({
   visible, onClose, avatar, displayName, onPublish,
@@ -155,10 +187,14 @@ export default function FincaScreen() {
 
   const [profile,setProfile]     = useState<ProfileDTO|null>(null);
   const [posts,setPosts]         = useState<PostDTO[]>([]);
-  const [editing,setEditing]     = useState(false);          //  ← restaurado
+  const [editing,setEditing]     = useState(false);
   const [loading,setLoading]     = useState(true);
   const [showComposer,setShowComposer]=useState(false);
   const [tab,setTab]             = useState<TabKey>("posts");
+
+  /* opciones publicación */
+  const [optVisible,setOptVisible] = useState(false);
+  const [selectedPost,setSelectedPost] = useState<PostDTO|null>(null);
 
   /* cargar perfil + posts */
   useEffect(()=>{ (async()=>{
@@ -174,7 +210,6 @@ export default function FincaScreen() {
   })(); },[]);
 
   /* publicar */
-  /* publicar */
   const createPost = async (data:{text:string; uri?:string; mediaType?: "image"|"video"})=>{
     const tk = await AsyncStorage.getItem("userToken");
     if(!tk) return;
@@ -183,7 +218,7 @@ export default function FincaScreen() {
 
     if (data.uri) {
       body = new FormData();
-      body.append("content", data.text);  // ← aquí clave corregida
+      body.append("content", data.text);
       body.append(data.mediaType!, {
         uri: data.uri,
         name: `post.${data.mediaType==="video" ? "mp4":"jpg"}`,
@@ -191,7 +226,7 @@ export default function FincaScreen() {
       } as any);
       headers = { Authorization:`Token ${tk}` };
     } else {
-      body = JSON.stringify({ content: data.text });  // ← aquí clave corregida
+      body = JSON.stringify({ content: data.text });
       headers = {
         "Content-Type":"application/json",
         Authorization :`Token ${tk}`,
@@ -206,6 +241,21 @@ export default function FincaScreen() {
     const newPost:PostDTO = await res.json();
     setPosts(prev=>[newPost,...prev]);
   };
+
+  /* eliminar / mover a papelera */
+  const trashPost = async (post:PostDTO)=>{
+    try{
+      const tk = await AsyncStorage.getItem("userToken"); if(!tk) return;
+      await fetch(endpoints.fincaPostDetail(post.id),{   // ← aquí se usa el nuevo nombre
+        method:"DELETE",
+        headers:{Authorization:`Token ${tk}`},
+      });
+      setPosts(prev=>prev.filter(p=>p.id!==post.id));
+    }catch(err){
+      Alert.alert("Error","No se pudo mover a la papelera");
+    }
+  };
+
   /* subir imágenes perfil */
   const pickImage = async (field:"avatar"|"cover")=>{
     const res=await ImagePicker.launchImageLibraryAsync({
@@ -254,6 +304,16 @@ export default function FincaScreen() {
         avatar={profile.avatar}
         displayName={profile.display_name||profile.username}
         onPublish={createPost}
+      />
+
+      <PostOptionsModal
+        visible={optVisible}
+        onClose={()=>setOptVisible(false)}
+        onEdit={()=>{ /* TODO: flujo de edición */ setOptVisible(false); }}
+        onTrash={()=>{
+          if(selectedPost){ trashPost(selectedPost); }
+          setOptVisible(false);
+        }}
       />
 
       <SafeAreaView style={styles.safe} edges={["top","bottom"]}>
@@ -325,6 +385,17 @@ export default function FincaScreen() {
                   const textContent = p.text ?? p.content ?? "";
                   return(
                     <View key={p.id} style={styles.postCard}>
+                      {/* botón opciones */}
+                      <TouchableOpacity
+                        style={styles.optBtn}
+                        onPress={()=>{
+                          setSelectedPost(p);
+                          setOptVisible(true);
+                        }}
+                      >
+                        <Ionicons name="leaf-outline" size={20} color="#C5E1A5"/>
+                      </TouchableOpacity>
+
                       {!!textContent && <Text style={styles.postContent}>{textContent}</Text>}
                       {!!p.image && <Image source={{uri:p.image}} style={styles.postMedia}/>}
                       {!!p.video && (
@@ -403,13 +474,14 @@ const styles = StyleSheet.create({
   placeholder:{color:"#FFFFFF99",fontSize:14},
 
   postCard:{width:"100%",backgroundColor:"rgba(0,0,0,0.40)",borderRadius:12,padding:14,marginBottom:12},
+  optBtn:{position:"absolute",top:6,right:6,padding:4},
   postContent:{color:"#fff",fontSize:15},
   postMedia:{width:"100%",aspectRatio:1,borderRadius:8,marginTop:6},
   actionsRow:{flexDirection:"row",justifyContent:"space-around",marginTop:10},
   postDate:{color:"#C5E1A5",fontSize:11,marginTop:6,textAlign:"right"},
 });
 
-/* --- estilos modal --- */
+/* --- estilos modal publicar --- */
 const mStyles = StyleSheet.create({
   modalSafe:{flex:1,backgroundColor:"#262626"},
   modalHeader:{flexDirection:"row",alignItems:"center",paddingHorizontal:16,paddingVertical:10,backgroundColor:"#1B1B1B"},
@@ -428,4 +500,14 @@ const mStyles = StyleSheet.create({
   quickList:{borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:"#444"},
   quickRow:{flexDirection:"row",alignItems:"center",padding:14},
   quickLabel:{color:"#e0e0e0",fontSize:14},
+});
+
+/* --- estilos modal opciones --- */
+const pStyles = StyleSheet.create({
+  backdrop:{flex:1,backgroundColor:"rgba(0,0,0,0.6)",justifyContent:"center",alignItems:"center"},
+  sheet:{backgroundColor:"#1E1E1E",borderRadius:12,width:"80%",paddingVertical:12},
+  optBtn:{flexDirection:"row",alignItems:"center",paddingVertical:12,paddingHorizontal:20},
+  optTxt:{color:"#fff",fontSize:15,fontWeight:"700"},
+  cancelWrap:{borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:"#555",paddingVertical:12},
+  cancelTxt:{color:"#C5E1A5",fontSize:15,fontWeight:"700",textAlign:"center"},
 });
